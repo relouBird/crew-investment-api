@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserType {
+  guest
+  admin
+}
+
+enum UserRole {
+  unauthenticated
+  authenticated
+  service_role
+}
+
+enum UserStatus {
+  Actif
+  Inactif
+  Suspendu
+}
+
+enum TransactionType {
+  deposit
+  withdrawal
+  transfer
+  bet_win
+  bet_loss
+}
+
+enum TransactionStatus {
+  done
+  pending
+  failed
+}
+
+// ─── User ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id          String @id @default(uuid()) @db.VarChar(36)
+  generatedId String @unique @map("generated_id") @db.VarChar(20) // USR15342
+
+  // Identité
+  firstName String  @map("first_name") @db.VarChar(50)
+  lastName  String  @map("last_name") @db.VarChar(50)
+  email     String  @unique @db.VarChar(64)
+  phone     String? @unique @db.VarChar(15)
+  country   String? @db.VarChar(50)
+
+  // Auth
+  password    String
+  type        UserType   @default(guest)
+  role        UserRole   @default(unauthenticated)
+  status      UserStatus @default(Inactif)
+  isAnonymous Boolean    @default(false) @map("is_anonymous")
+
+  // Vérification
+  emailConfirmedAt DateTime? @map("email_confirmed_at")
+  phoneConfirmedAt DateTime? @map("phone_confirmed_at")
+
+  // Sécurité
+  twoFactorEnabled Boolean @default(false) @map("two_factor_enabled")
+
+  // Notifications (JSON)
+  notifications Json @default("{\"email\": true, \"push\": true, \"betResults\": true, \"promotions\": false}")
+
+  // Timestamps
+  lastSignInAt DateTime? @map("last_sign_in_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  // Relations
+  otps         Otp[]
+  session      Session?
+  wallet       Wallet?
+  transactions Transaction[]
+
+  sponsoredBy    Sponsoring?  @relation("SponsorRelation")
+  sponsoredsByMe Sponsoring[] @relation("SponsoredRelation")
+}
+
+// ─── Session ──────────────────────────────────────────────────────────────────
+
+model Session {
+  id     String @id @default(uuid()) @db.VarChar(36)
+  userId String @unique @map("user_id") @db.VarChar(36)
+
+  accessToken  String   @map("access_token") @db.Text // JWT = taille variable
+  refreshToken String   @map("refresh_token") @db.VarChar(50)
+  tokenType    String   @default("bearer") @map("token_type") @db.VarChar(20)
+  expiresIn    Int      @default(3600) @map("expires_in") // secondes
+  expiresAt    DateTime @map("expires_at")
+
+  loggedOut Boolean @default(false) @map("logged_out")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updatedAt")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── OTP ──────────────────────────────────────────────────────────────────────
+
+model Otp {
+  id        Int      @id @default(autoincrement())
+  code      String   @db.VarChar(6)
+  expiresAt DateTime @map("expires_at")
+  used      Boolean  @default(false)
+  userId    String?  @map("user_id") @db.VarChar(36) // aligné sur UUID
+  user      User?    @relation(fields: [userId], references: [id])
+}
+
+// ─── WALLET ──────────────────────────────────────────────────────────────────────
+
+model Wallet {
+  id        Int      @id @default(autoincrement())
+  uid       String   @unique // Lien avec User
+  fundsId   String   @unique @default(uuid()) @map("funds_id")
+  funds     Float    @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updatedAt")
+
+  // Relation
+  user User @relation(fields: [uid], references: [id], onDelete: Cascade)
+}
+
+// ─── TRANSACTIONS ──────────────────────────────────────────────────────────────────────
+
+model Transaction {
+  id            Int               @id @default(autoincrement())
+  transactionId String            @unique @default(uuid()) @map("transaction_id")
+  creatorId     String            @map("creator_id")
+  amount        Float
+  description   String
+  type          TransactionType
+  status        TransactionStatus @default(pending)
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updatedAt")
+
+  // Relation
+  creator User @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId])
+  @@index([transactionId])
+  @@index([status])
+  @@index([type])
+  @@map("transaction")
+}
+
+// ─── SPONSORING ──────────────────────────────────────────────────────────────────────
+model Sponsoring {
+  id           Int     @id @default(autoincrement())
+  sponsorId    String  @unique @default(uuid()) @map("sponsor_id")
+  sponsoredId  String  @unique @default(uuid()) @map("sponsored_id")
+  firstDeposit Boolean @default(false) @map("first_deposit")
+
+  sponsor   User @relation("SponsorRelation", fields: [sponsorId], references: [id])
+  sponsored User @relation("SponsoredRelation", fields: [sponsoredId], references: [id])
+}
+
+// ─── CAT ──────────────────────────────────────────────────────────────────────
+
+model Cat {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(32)
+  age       Int      @default(0) @db.SmallInt
+  createdAt DateTime @default(now()) @map("created_at")
+}

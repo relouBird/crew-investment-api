@@ -1,0 +1,3 @@
+src/datasets/datasets.service.ts(49,29): error TS2561: Object literal may only specify known properties, but 'datasetindicators' does not exist in type 'DatasetCountOutputTypeSelect<DefaultArgs>'. Did you mean to write 'datasetIndicateurs'?
+src/datasets/datasets.service.ts(73,17): error TS2561: Object literal may only specify known properties, but 'datasetindicators' does not exist in type 'DatasetInclude<DefaultArgs>'. Did you mean to write 'datasetIndicateurs'?
+src/datasets/datasets.service.ts(122,27): error TS2551: Property 'datasetindicator' does not exist on type 'PrismaService'. Did you mean 'datasetIndicateur'?
