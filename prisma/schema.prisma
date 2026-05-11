@@ -39,6 +39,12 @@ enum TransactionStatus {
   failed
 }
 
+enum BetPrediction {
+  home
+  away
+  draw
+}
+
 // ─── User ─────────────────────────────────────────────────────────────────────
 
 model User {
@@ -83,6 +89,7 @@ model User {
 
   sponsoredBy    Sponsoring?  @relation("SponsorRelation")
   sponsoredsByMe Sponsoring[] @relation("SponsoredRelation")
+  userBets       UserBet[]
 }
 
 // ─── Session ──────────────────────────────────────────────────────────────────
@@ -162,6 +169,53 @@ model Sponsoring {
 
   sponsor   User @relation("SponsorRelation", fields: [sponsorId], references: [id])
   sponsored User @relation("SponsoredRelation", fields: [sponsoredId], references: [id])
+}
+
+// ─── BET ──────────────────────────────────────────────────────────────────────
+
+model Bet {
+  id             String   @id @default(uuid())
+  score          String   @default("")
+  winner         String   @default("")
+  homeTeam       String   @map("home_team") // JSON stringified BetTeamType 
+  awayTeam       String   @map("away_team") // JSON stringified BetTeamType
+  isActive       Boolean  @default(true)
+  isEnded        Boolean  @default(false)
+  start_at       DateTime
+  end_at         DateTime
+  winPercentage  Float
+  lossPercentage Float
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  // Relations
+  userBets UserBet[]
+
+  @@map("bets")
+}
+
+// ─── BET USER ──────────────────────────────────────────────────────────────────────
+
+model UserBet {
+  id            String        @id @default(uuid())
+  uid           String // User ID
+  matchId       String        @map("match_id") // Bet ID
+  prediction    BetPrediction @default(draw) // 'home', 'draw', 'away'
+  win           Boolean?
+  potentialGain Float         @map("potential_gain")
+  potentialLoss Float         @map("potential_loss")
+  isDelete      Boolean       @default(false) @map("is_delete")
+  isPayed       Boolean       @default(false) @map("is_payed")
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @updatedAt
+
+  // Relations
+  user  User @relation(fields: [uid], references: [id], onDelete: Cascade)
+  match Bet  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@index([uid])
+  @@index([matchId])
+  @@map("user_bets")
 }
 
 // ─── CAT ──────────────────────────────────────────────────────────────────────
