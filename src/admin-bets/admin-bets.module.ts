@@ -5,11 +5,13 @@ import { PrismaModule } from 'src/prisma/prisma.module';
 import { WalletModule } from 'src/wallet/wallet.module';
 import { AdminMatchService } from './admin-matches.service';
 import { ConfigModule } from '@nestjs/config';
+import { TransactionModule } from 'src/transaction/transaction.module';
 
 @Module({
   imports: [
     PrismaModule,
     WalletModule,
+    TransactionModule,
     ConfigModule.forRoot({
       isGlobal: true,
     }),

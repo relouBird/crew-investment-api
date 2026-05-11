@@ -196,6 +196,44 @@ export class TransactionService {
     return transferStatus;
   }
 
+  async createWinBetTransaction(
+    uid: string,
+    amount: number,
+    description: string,
+  ) {
+    return this.prisma.transaction.create({
+      data: {
+        amount: amount,
+        description: description,
+        type: 'bet_win',
+        creator: {
+          connect: {
+            id: uid,
+          },
+        },
+      },
+    });
+  }
+
+  async createLossBetTransaction(
+    uid: string,
+    amount: number,
+    description: string,
+  ) {
+    return this.prisma.transaction.create({
+      data: {
+        amount: amount,
+        description: description,
+        type: 'bet_loss',
+        creator: {
+          connect: {
+            id: uid,
+          },
+        },
+      },
+    });
+  }
+
   // ─── Méthodes simulées d’appel à la passerelle de paiement ─────────────
   private async checkPaymentStatus(transactionId: string) {
     // TODO: Remplacer par un vrai appel à NotchPay ou autre SDK

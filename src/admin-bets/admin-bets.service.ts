@@ -15,6 +15,7 @@ import {
   ApiFootballTeamsResponse,
 } from 'src/types/api-bet.type';
 import { AdminMatchService } from './admin-matches.service';
+import { TransactionService } from 'src/transaction/transaction.service';
 
 @Injectable()
 export class AdminBetService {
@@ -22,6 +23,7 @@ export class AdminBetService {
     private readonly prisma: PrismaService,
     private readonly adminMatchService: AdminMatchService,
     private readonly walletService: WalletService,
+    private readonly transactionService: TransactionService,
   ) {}
 
   /**
@@ -77,6 +79,38 @@ export class AdminBetService {
     });
 
     return bets.map((bet) => this.formatBetResponse(bet));
+  }
+
+  /**
+   * Récuperer les matches actifs à fermer et les ferme.
+   */
+  async getToCloseBets() {
+    const bets = await this.getActiveBets();
+
+    const toEnd: BetEntity[] = [];
+
+    for (let i = 0; i < bets.length; i++) {
+      const bet = bets[i];
+      let now = new Date();
+      let endDate = new Date(bet.end_at);
+      if (now > endDate) {
+        toEnd.push(bet);
+      }
+    }
+
+    const idsList = toEnd.map((b) => b.id);
+
+    await this.prisma.bet.updateMany({
+      where: {
+        id: { in: idsList },
+      },
+      data: {
+        isEnded: true,
+        isActive: true,
+      },
+    });
+
+    return idsList;
   }
 
   /**
@@ -246,8 +280,18 @@ export class AdminBetService {
       // Ajuster le wallet en fonction du résultat
       if (hasWon) {
         await this.walletService.addFunds(bet.uid, bet.potentialGain);
+        await this.transactionService.createWinBetTransaction(
+          bet.uid,
+          bet.potentialGain,
+          `Gain - ${bet.prediction}`,
+        );
       } else {
         await this.walletService.withdrawFunds(bet.uid, bet.potentialLoss);
+        await this.transactionService.createLossBetTransaction(
+          bet.uid,
+          bet.potentialLoss,
+          `Perte - ${bet.prediction}`,
+        );
       }
     }
   }
