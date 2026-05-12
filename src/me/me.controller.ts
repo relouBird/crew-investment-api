@@ -28,9 +28,10 @@ export class MeController {
   @HttpCode(HttpStatus.OK)
   @Get('')
   @ApiOperation({ summary: "Détails d'un compte utilisateur" })
-  GetMe(@Request() req: RequestAuth) {
+  async GetMe(@Request() req: RequestAuth) {
     const user = req['user'];
-    return this.meService.getMe(user.id);
+    const data = this.meService.getMe(user.id);
+    return data;
   }
 
   /**
@@ -43,13 +44,14 @@ export class MeController {
   @HttpCode(HttpStatus.CREATED)
   @Post('update-infos')
   @ApiOperation({ summary: "Mettre à jour le profil d'un compte utilisateur" })
-  updateUserInfos(
+  async updateUserInfos(
     @Request() req: RequestAuth,
     @Body()
     body: MeUpdateInfosDto,
   ) {
     const user = req['user'];
-    return this.meService.updateInfos(user.id, body);
+    const data = await this.meService.updateInfos(user.id, body);
+    return data;
   }
 
   /**
@@ -62,18 +64,22 @@ export class MeController {
   @HttpCode(HttpStatus.CREATED)
   @Post('change-password')
   @ApiOperation({ summary: "Changer le mot de Passe d'un compte utilisateur" })
-  changeUserPassword(
+  async changeUserPassword(
     @Request() req: RequestAuth,
     @Body()
     body: MeChangePasswordDto,
   ) {
     const user = req['user'];
-    return this.meService.changePassword(
+    const data = await this.meService.changePassword(
       user.id,
       body.password,
       body.new_password,
       body.confirm_new_password,
     );
+    return {
+      message: 'Account Infos change password updated...',
+      data,
+    };
   }
 
   /**
@@ -88,6 +94,7 @@ export class MeController {
   @ApiOperation({ summary: "Suppression coté client d'un compte utilisateur" })
   deleteUser(@Request() req: RequestAuth) {
     const user = req['user'];
-    return this.meService.deleteAccount(user.id);
+    const data = this.meService.deleteAccount(user.id);
+    return data;
   }
 }

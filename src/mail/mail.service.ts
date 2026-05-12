@@ -12,10 +12,10 @@ export class MailService {
   private sender: string;
 
   // constructor(private configService: ConfigService) {
-  //   const host = this.configService.get('FINAMIX_SMTP_HOST');
-  //   const port = this.configService.get('FINAMIX_SMTP_PORT');
-  //   const user = this.configService.get('FINAMIX_SMTP_USER');
-  //   const pass = this.configService.get('FINAMIX_SMTP_PASS');
+  //   const host = this.configService.get('INVESTIA_SMTP_HOST');
+  //   const port = this.configService.get('INVESTIA_SMTP_PORT');
+  //   const user = this.configService.get('INVESTIA_SMTP_USER');
+  //   const pass = this.configService.get('INVESTIA_SMTP_PASS');
 
   //   if (!host || !port || !user || !pass) {
   //     throw new Error('Configuration SMTP incomplète');
@@ -44,7 +44,7 @@ export class MailService {
     try {
       await this.transporter.sendMail({
         from: 'noreply@investia.com',
-        // from: `"FinaMix, Supports" <${this.sender}>`,
+        // from: `"InvestIA, Supports" <${this.sender}>`,
         to,
         subject,
         html,

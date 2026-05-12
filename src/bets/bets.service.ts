@@ -242,7 +242,7 @@ export class BetService {
       id: userBet.id,
       uid: userBet.uid,
       matchId: userBet.matchId,
-      ...(match && this.formatSingleBetResponse(match)),
+      match: match ? this.formatSingleBetResponse(match) : undefined,
       prediction: userBet.prediction,
       win: userBet.win,
       potentialGain: userBet.potentialGain,

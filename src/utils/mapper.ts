@@ -2,6 +2,14 @@
 
 import { User, Session } from '@prisma/client';
 import { PayloadType } from 'src/types/auth.type';
+import { safeJsonParse } from '.';
+
+export interface NotificationsType {
+  email: boolean;
+  push: boolean;
+  betResults: boolean;
+  promotions: boolean;
+}
 
 export function mapUserResponse(user: User, session?: Session) {
   const userPayload = {
@@ -25,7 +33,7 @@ export function mapUserResponse(user: User, session?: Session) {
       firstName: user.firstName,
       generatedId: user.generatedId,
       lastName: user.lastName,
-      notifications: JSON.parse(user.notifications?.toString() ?? ''),
+      notifications: safeJsonParse(user.notifications) as NotificationsType,
       phone: user.phone ?? '',
       status: user.status,
       twoFactorEnabled: user.twoFactorEnabled,
@@ -76,7 +84,7 @@ export function mapMeResponse(user: User) {
     firstName: user.firstName,
     generatedId: user.generatedId,
     lastName: user.lastName,
-    notifications: JSON.parse(user.notifications?.toString() ?? ''),
+    notifications: safeJsonParse(user.notifications) as NotificationsType,
     phone: user.phone ?? '',
     status: user.status,
     twoFactorEnabled: user.twoFactorEnabled,

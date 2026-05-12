@@ -24,7 +24,7 @@ export class AdminUserController {
   @ApiOperation({ summary: 'Permet de recuperer tous les utilisateurs' })
   async findAllUsers(@Request() req: RequestAuth) {
     const user = req['user'];
-    const data = this.adminUserService.getAllUsers(user.id);
+    const data = await this.adminUserService.getAllUsers(user.id);
     return {
       message: 'Utilisateurs récupérés avec succès',
       data,

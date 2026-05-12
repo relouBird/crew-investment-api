@@ -16,6 +16,7 @@ import {
 } from 'src/types/api-bet.type';
 import { AdminMatchService } from './admin-matches.service';
 import { TransactionService } from 'src/transaction/transaction.service';
+import { safeJsonParse } from 'src/utils';
 
 @Injectable()
 export class AdminBetService {
@@ -46,6 +47,8 @@ export class AdminBetService {
         awayTeam: JSON.stringify(data.awayTeam),
         start_at: startDate,
         end_at: endDate,
+        winner: data.winner,
+        score: data.score,
         winPercentage: data.winPercentage,
         lossPercentage: data.lossPercentage,
         isActive: data.isActive,
@@ -78,7 +81,14 @@ export class AdminBetService {
       orderBy: { start_at: 'asc' },
     });
 
-    return bets.map((bet) => this.formatBetResponse(bet));
+    const filteredBets = bets.filter((bet) => {
+      const startTime = new Date(bet.start_at);
+      if (new Date() > startTime) {
+        return bet;
+      }
+    });
+
+    return filteredBets.map((bet) => this.formatBetResponse(bet));
   }
 
   /**
@@ -297,6 +307,11 @@ export class AdminBetService {
   }
 
   async getAllCompetitions(): Promise<null | CompetitionModel[]> {
+    if (true) {
+      console.log("IT'S EMPTY");
+    } else {
+      console.log("IT'S NOT EMPTY, FIRST USERNAME : ");
+    }
     const datas =
       (await this.adminMatchService.getAllMatchCompetitions()) ??
       ({} as ApiFootballCompetitionResponse);
@@ -320,8 +335,8 @@ export class AdminBetService {
       id: bet.id,
       score: bet.score,
       winner: bet.winner,
-      homeTeam: JSON.parse(bet.homeTeam) as BetTeamType,
-      awayTeam: JSON.parse(bet.awayTeam) as BetTeamType,
+      homeTeam: safeJsonParse(bet.homeTeam) as BetTeamType,
+      awayTeam: safeJsonParse(bet.awayTeam) as BetTeamType,
       isActive: bet.isActive,
       isEnded: bet.isEnded,
       start_at: bet.start_at,

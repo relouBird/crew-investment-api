@@ -179,12 +179,12 @@ model Bet {
   winner         String   @default("")
   homeTeam       String   @map("home_team") // JSON stringified BetTeamType 
   awayTeam       String   @map("away_team") // JSON stringified BetTeamType
-  isActive       Boolean  @default(true)
-  isEnded        Boolean  @default(false)
+  isActive       Boolean  @default(true) @map("is_active")
+  isEnded        Boolean  @default(false) @map("is_ended")
   start_at       DateTime
   end_at         DateTime
-  winPercentage  Float
-  lossPercentage Float
+  winPercentage  Float    @map("win_percentage")
+  lossPercentage Float    @map("loss_percentage")
   created_at     DateTime @default(now())
   updated_at     DateTime @updatedAt
 

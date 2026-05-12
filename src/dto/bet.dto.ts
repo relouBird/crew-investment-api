@@ -10,6 +10,7 @@ import {
   Max,
   IsEnum,
   IsOptional,
+  IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { BetPrediction } from '@prisma/client';
@@ -38,6 +39,17 @@ export class CreateBetDTO {
   @Type(() => CreateBetTeamDTO)
   awayTeam!: CreateBetTeamDTO;
 
+  @IsString()
+  @IsNotEmpty()
+  score!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  winner!: string;
+
+  @IsBoolean()
+  isEnded!: boolean;
+
   @IsDateString()
   start_at!: string;
 
@@ -59,6 +71,11 @@ export class CreateBetDTO {
 }
 
 export class UpdateBetDTO {
+  @IsString()
+  @IsUUID()
+  @IsNotEmpty()
+  id!: string;
+
   @IsString()
   @IsOptional()
   score?: string;
@@ -168,4 +185,9 @@ export class UpdateUserBetDTO {
   @IsNumber()
   @IsOptional()
   potentialLoss?: number;
+
+  @IsString()
+  @IsUUID()
+  @IsOptional()
+  id?: string;
 }

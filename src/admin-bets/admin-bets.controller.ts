@@ -30,6 +30,7 @@ export class AdminBetController {
   @Get()
   @ApiOperation({ summary: 'Permet de recuperer tous les matchs' })
   async findAll() {
+    console.log("IT'S COMPETITIONS");
     const data = await this.betService.getAllBets();
     return {
       message: 'Matchs récupérés avec succès',
@@ -44,6 +45,43 @@ export class AdminBetController {
     return {
       message: 'Matchs actifs récupérés avec succès',
       data,
+    };
+  }
+
+  @Get('competitions')
+  @ApiOperation({
+    summary: 'Permet de recuperer toutes les competitions de Foot Disponible',
+  })
+  async findCompetitions() {
+    console.log("IT'S COMPETITIONS");
+    const data = await this.betService.getAllCompetitions();
+    return {
+      message: 'Toutes les competitions récupérées avec succès',
+      data: data ?? [],
+    };
+  }
+
+  @Get('competitions/:id/teams')
+  @ApiOperation({
+    summary: "Permet de recuperer toutes les equipes d'une Competition",
+  })
+  async findTeamsOnCompetitions(@Param('id') id: number | string) {
+    const data = await this.betService.getAllTeamCompetitions(String(id));
+    return {
+      message: 'Toutes les equipes récupérées avec succès',
+      data: data ?? [],
+    };
+  }
+
+  @Post('process/:matchId')
+  @ApiOperation({
+    summary:
+      'Permet de comptabiliser les victoires et les defaites sur un match',
+  })
+  async processResults(@Param('matchId') matchId: string) {
+    await this.betService.processBetResults(matchId);
+    return {
+      message: 'Résultats traités avec succès',
     };
   }
 
@@ -87,42 +125,6 @@ export class AdminBetController {
     return {
       message: 'Match supprimé avec succès',
       data,
-    };
-  }
-
-  @Get('competitions')
-  @ApiOperation({
-    summary: 'Permet de recuperer toutes les competitions de Foot Disponible',
-  })
-  async findCompetitions() {
-    const data = await this.betService.getAllCompetitions();
-    return {
-      message: 'Toutes les competitions récupérées avec succès',
-      data: data ?? [],
-    };
-  }
-
-  @Get('competitions/:id/teams')
-  @ApiOperation({
-    summary: "Permet de recuperer toutes les equipes d'une Competition",
-  })
-  async findTeamsOnCompetitions(@Param('id') id: number | string) {
-    const data = await this.betService.getAllTeamCompetitions(String(id));
-    return {
-      message: 'Toutes les equipes récupérées avec succès',
-      data: data ?? [],
-    };
-  }
-
-  @Post('process/:matchId')
-  @ApiOperation({
-    summary:
-      'Permet de comptabiliser les victoires et les defaites sur un match',
-  })
-  async processResults(@Param('matchId') matchId: string) {
-    await this.betService.processBetResults(matchId);
-    return {
-      message: 'Résultats traités avec succès',
     };
   }
 }
