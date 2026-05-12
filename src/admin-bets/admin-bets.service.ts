@@ -315,7 +315,7 @@ export class AdminBetService {
   /**
    * Formater la réponse du match
    */
-  private formatBetResponse(bet: any): BetEntity {
+  formatBetResponse(bet: any): BetEntity {
     return {
       id: bet.id,
       score: bet.score,

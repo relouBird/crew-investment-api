@@ -234,12 +234,15 @@ export class BetService {
   /**
    * Formater la réponse du pari utilisateur
    */
-  private formatUserBetResponse(userBet: any, match?: any): UserBetEntity {
+  private formatUserBetResponse(
+    userBet: UserBetEntity,
+    match?: BetEntity,
+  ): UserBetEntity {
     return {
       id: userBet.id,
       uid: userBet.uid,
       matchId: userBet.matchId,
-      ...(match && { match }),
+      ...(match && this.formatSingleBetResponse(match)),
       prediction: userBet.prediction,
       win: userBet.win,
       potentialGain: userBet.potentialGain,
@@ -256,9 +259,20 @@ export class BetService {
    */
   private formatBetResponse(matches: BetEntity[]): BetEntity[] {
     return matches.map((match) => ({
-      ...match,
+      ...this.betService.formatBetResponse(match),
       score: '',
       winner: '',
     }));
+  }
+
+  /**
+   * Formater la réponse d'un pari Admin
+   */
+  private formatSingleBetResponse(match: BetEntity): BetEntity {
+    return {
+      ...this.betService.formatBetResponse(match),
+      score: '',
+      winner: '',
+    };
   }
 }

@@ -28,7 +28,7 @@ export interface UserBetEntity {
   matchId: string;
   match?: BetEntity;
   prediction: string;
-  win?: boolean;
+  win?: boolean | null;
   potentialGain: number;
   potentialLoss: number;
   isDelete: boolean;
