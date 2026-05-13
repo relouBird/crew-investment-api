@@ -136,8 +136,6 @@ export class NotchPayTransferService {
         },
       };
 
-      this.logger.log('SIMPLE-TRANSFER-PAYLOAD ==>', payload);
-
       const response = await this.notchTransferRequest('POST', '', payload);
 
       if (!response.ok) {
@@ -177,7 +175,9 @@ export class NotchPayTransferService {
       }
 
       const transfer = (await response.json()) as TransferResponse;
-      this.logger.log(`Transfer checked: ${transfer.transfer.reference}`);
+      this.logger.log(
+        `Transfer checked: ${transfer.transfer.reference}, status : ${transfer.transfer.status}`,
+      );
       return transfer;
     } catch (error) {
       this.logger.error('checking-transfer-error =>', error);

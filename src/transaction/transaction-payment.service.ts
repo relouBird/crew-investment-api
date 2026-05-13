@@ -10,7 +10,6 @@ import {
   METHOD_REQUEST,
   METHOD_PAYMENT,
   CancelResponse,
-
 } from 'src/types/notchpay/all.type';
 
 import {
@@ -125,6 +124,8 @@ export class NotchPayPaymentService {
         phone,
         ...(description && { description }),
       };
+
+      this.logger.log(`NotchPay payment request payload : ${payload}`);
 
       const response = await this.notchPaymentRequest('POST', '', payload);
 

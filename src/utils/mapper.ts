@@ -1,8 +1,15 @@
 // auth.mapper.ts
 
-import { User, Session } from '@prisma/client';
+import {
+  User,
+  Session,
+  Wallet,
+  Transaction,
+  TransactionType,
+} from '@prisma/client';
 import { PayloadType } from 'src/types/auth.type';
 import { safeJsonParse } from '.';
+import { TransactionComposableResult } from 'src/types/composable-result.type';
 
 export interface NotificationsType {
   email: boolean;
@@ -89,5 +96,58 @@ export function mapMeResponse(user: User) {
     status: user.status,
     twoFactorEnabled: user.twoFactorEnabled,
     type: user.type,
+  };
+}
+
+export function properTxComposable(wallet: Wallet, transactions: Transaction[]): TransactionComposableResult {
+  // Initialiser les stats
+  let totalDeposits = 0;
+  let totalWins = 0;
+  let totalPending = 0;
+  let totalFailed = 0;
+  let totalIncome = 0;
+  let totalExpenses = 0;
+
+  // Parcours unique des transactions
+  for (const tx of transactions) {
+    if (tx.status === 'done') {
+      if (tx.type === 'deposit' || tx.type === 'bet_win') {
+        totalIncome += tx.amount;
+      } else {
+        totalExpenses += tx.amount;
+      }
+
+      if (tx.type === 'deposit') {
+        totalDeposits += tx.amount;
+      } else if (tx.type === 'bet_win') {
+        totalWins += tx.amount;
+      }
+    } else if (tx.status === 'pending') {
+      totalPending += tx.amount;
+    } else if (tx.status === 'failed') {
+      totalFailed += tx.amount;
+    }
+  }
+
+  const evolution = totalIncome - totalExpenses;
+  const volume = totalIncome + totalExpenses;
+  const percentage = volume !== 0 ? (evolution / volume) * 100 : 0;
+
+  return {
+    // Utilise le solde réel du wallet au lieu de recalculer
+    balance: wallet.funds,
+    transactionStats: {
+      totalDeposits,
+      totalWins,
+      totalPending,
+      totalFailed,
+    },
+    evolution: {
+      digit: evolution,
+      amount: evolution.toFixed(2),
+      percentage: percentage.toFixed(1) + '%',
+      isPositive: evolution >= 0,
+    },
+    transactions,
   };
 }

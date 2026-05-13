@@ -56,7 +56,7 @@ export class TransactionController {
    */
   @Get(':id/check')
   @ApiOperation({ summary: "Vérifier l'état de la transaction" })
-  async checkState(@Param('id') id: string) {
+  async checkState(@Param('id') id: number) {
     return this.transactionService.checkState(id);
   }
 

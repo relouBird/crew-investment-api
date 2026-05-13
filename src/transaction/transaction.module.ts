@@ -21,6 +21,11 @@ import { NotchPayBeneficiaryService } from './transaction-beneficiary.service';
     NotchPayBeneficiaryService,
   ],
   controllers: [TransactionController],
-  exports: [TransactionService],
+  exports: [
+    TransactionService,
+    NotchPayPaymentService,
+    NotchPayTransferService,
+    NotchPayBeneficiaryService,
+  ],
 })
 export class TransactionModule {}
