@@ -66,6 +66,7 @@ export class AuthService {
       },
       data: {
         status: 'Actif',
+        lastSignInAt: new Date(),
       },
     });
 

@@ -28,7 +28,7 @@ export function formatAllUsersByAdmin(users: AdminUser[]) {
       ...user,
       user_metadata: {
         ...user.user_metadata,
-        balance: user.wallet ?? 0,
+        balance: user.wallet?.funds ?? 0,
         totalInvested,
         profitLoss: 0,
       },
