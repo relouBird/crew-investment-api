@@ -183,7 +183,7 @@ export class MeUpdateInfosDto {
     message: "L'Authentification à double-facteurs doit être valide",
   })
   @IsOptional()
-  twoFactorEnabled?: string;
+  twoFactorEnabled?: boolean;
 
   @ApiProperty({
     description: "Préférences de notifications de l'utilisateur",

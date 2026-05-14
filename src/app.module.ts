@@ -10,19 +10,28 @@ import { MeModule } from './me/me.module';
 import { WalletModule } from './wallet/wallet.module';
 import { SponsoringModule } from './sponsoring/sponsoring.module';
 import { TransactionModule } from './transaction/transaction.module';
+import { BetModule } from './bets/bets.module';
+import { AdminBetModule } from './admin-bets/admin-bets.module';
+import { AdminUserModule } from './admin-users/admin-users.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { TaskService } from './task.service';
 
 @Module({
   imports: [
     PrismaModule,
     AuthModule,
+    AdminUserModule,
     MeModule,
     SponsoringModule,
     WalletModule,
     TransactionModule,
+    AdminBetModule,
+    BetModule,
     CatModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
-  providers: [AppService, PrismaService],
+  providers: [AppService, PrismaService, TaskService],
   exports: [PrismaService],
 })
 export class AppModule implements NestModule {

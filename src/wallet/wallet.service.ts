@@ -5,13 +5,27 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateWalletDTO, UpdateWalletDTO } from 'src/dto/wallet.dto';
-import { Wallet } from '@prisma/client';
-import { connect } from 'http2';
+import {
+  CreateWalletDTO,
+  RefillWalletDTO,
+  UpdateWalletDTO,
+  WithdrawalWalletDto,
+} from 'src/dto/wallet.dto';
+import { Wallet, Transaction } from '@prisma/client';
+import { NotchPayPaymentService } from 'src/transaction/transaction-payment.service';
+import { NotchPayTransferService } from 'src/transaction/transaction-transfer.service';
+import { TransactionService } from 'src/transaction/transaction.service';
+import { METHOD_PAYMENT } from 'src/types/notchpay/all.type';
+import { properTxComposable } from 'src/utils/mapper';
 
 @Injectable()
 export class WalletService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly paymentService: NotchPayPaymentService,
+    private readonly transferService: NotchPayTransferService,
+    private readonly transactionService: TransactionService,
+  ) {}
 
   /**
    * Créer un wallet pour un utilisateur
@@ -125,6 +139,30 @@ export class WalletService {
   }
 
   /**
+   * Retourner les statistiques d'un utilisateurs
+   */
+  async getStatisticWalletByUserId(uid: string) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: uid,
+      },
+      include: {
+        transactions: true,
+        wallet: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User Not Found.');
+    }
+
+    const wallet = user.wallet as Wallet;
+    const transactions = user.transactions as Transaction[];
+
+    return properTxComposable(wallet, transactions);
+  }
+
+  /**
    * Récupérer un wallet par ID
    */
   async getWalletById(id: number) {
@@ -174,6 +212,81 @@ export class WalletService {
     }
 
     return this.formatWalletResponse(wallet);
+  }
+
+  /**
+   * Recharger un compte Utilisateur
+   */
+  async refillUserAccount(uid: string, data: RefillWalletDTO) {
+    const user = await this.getUserLocaly(uid);
+
+    const description = `Depot - ${data.service}`;
+
+    const external_transaction = await this.paymentService.createPayment(
+      user.email,
+      data.transaction_number,
+      data.amount,
+      description,
+    );
+
+    await this.paymentService.completePayment(
+      external_transaction.transaction.reference,
+      data.service as unknown as METHOD_PAYMENT,
+      data.transaction_number,
+    );
+
+    const transaction = await this.transactionService.createNotchPayTransaction(
+      {
+        amount: data.amount,
+        description,
+        type: 'deposit',
+        transaction_id: external_transaction.transaction.reference,
+        uid: user.id,
+      },
+    );
+
+    return {
+      ...data,
+      transaction_id: transaction.id,
+      transaction_details: external_transaction.transaction,
+    };
+  }
+
+  /**
+   * Recharger un compte Utilisateur
+   */
+  async withdrawUserAccount(uid: string, data: WithdrawalWalletDto) {
+    const user = await this.getUserLocaly(uid);
+
+    const description = `Retrait - ${data.service}`;
+
+    const external_transaction =
+      await this.transferService.createSimpleTransfer(
+        user.firstName + ' ' + user.lastName,
+        data.transaction_number,
+        data.amount,
+      );
+
+    const transaction = await this.transactionService.createNotchPayTransaction(
+      {
+        amount: data.amount,
+        description,
+        type: 'withdrawal',
+        transaction_id: external_transaction.transfer.reference,
+        uid: user.id,
+      },
+    );
+
+    await this.withdrawFunds(uid, data.amount);
+
+    const wallet = (await this.getWalletByUserId(uid)).data;
+
+    return {
+      ...data,
+      transaction_id: transaction.id,
+      wallet,
+      transaction_details: external_transaction.transfer,
+    };
   }
 
   /**
@@ -332,6 +445,21 @@ export class WalletService {
     return this.formatWalletResponse(wallet);
   }
 
+  /**
+   * Permet de recuperer un User
+   */
+  private async getUserLocaly(uid: string) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: uid,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User Not Found');
+    }
+    return user;
+  }
   /**
    * Formater la réponse du wallet
    */

@@ -22,12 +22,12 @@ Mettre ceci en commmentaire puisque c'est pour la prod (ou le decommmenter si ce
 ```bash
     constructor(private configService: ConfigService) {
         this.transporter = createTransport({
-        host: this.configService.get('FINAMIX_SMTP_HOST'),
-        port: this.configService.get('FINAMIX_SMTP_PORT'),
+        host: this.configService.get('INVESTIA_SMTP_HOST'),
+        port: this.configService.get('INVESTIA_SMTP_PORT'),
         secure: true,
         auth: {
-            user: this.configService.get('FINAMIX_SMTP_USER'),
-            pass: this.configService.get('FINAMIX_SMTP_PASS'),
+            user: this.configService.get('INVESTIA_SMTP_USER'),
+            pass: this.configService.get('INVESTIA_SMTP_PASS'),
         },
     })}
 ```

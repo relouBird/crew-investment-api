@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
@@ -9,6 +10,7 @@ import {
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
 import { WalletService } from './wallet.service';
 import { RequestAuth } from 'src/types/auth.type';
+import { RefillWalletDTO, WithdrawalWalletDto } from 'src/dto/wallet.dto';
 
 @ApiTags('Wallets')
 @ApiBearerAuth('access-token')
@@ -25,10 +27,31 @@ export class WalletController {
    */
   @HttpCode(HttpStatus.OK)
   @Get('')
-  @ApiOperation({ summary: 'Détail du porte-feuille d\'un utilisateur ' })
+  @ApiOperation({ summary: "Détail du porte-feuille d'un utilisateur " })
   GetWallet(@Request() req: RequestAuth) {
     const user = req['user'];
     return this.walletService.getWalletByUserId(user.id);
+  }
+
+  /**
+   * =========================
+   * 🔐 ROUTE STAT WALLET
+   * =========================
+   * GET /wallets/summary
+   * Route pour avoir les informations statistiques du compte d'un utilisateur
+   */
+  @HttpCode(HttpStatus.OK)
+  @Get('summary')
+  @ApiOperation({
+    summary: "Détail et statistique du porte-feuille d'un utilisateur ",
+  })
+  async GetStatWallet(@Request() req: RequestAuth) {
+    const user = req['user'];
+    const data = await this.walletService.getStatisticWalletByUserId(user.id);
+    return {
+      message: 'Statistics are generated.',
+      ...data,
+    };
   }
 
   /**
@@ -55,10 +78,19 @@ export class WalletController {
    */
   @HttpCode(HttpStatus.OK)
   @Post('refill-account')
-  @ApiOperation({ summary: 'Effectuer une recharge d\'un porte feuille électronique' })
-  PostRefillAccount(@Request() req: RequestAuth) {
+  @ApiOperation({
+    summary: "Effectuer une recharge d'un porte feuille électronique",
+  })
+  async PostRefillAccount(
+    @Request() req: RequestAuth,
+    @Body() body: RefillWalletDTO,
+  ) {
     const user = req['user'];
-    return this.walletService.addFunds(user.id, 1000);
+    const data = await this.walletService.refillUserAccount(user.id, body);
+    return {
+      message: 'Transaction Initialized...',
+      data,
+    };
   }
 
   /**
@@ -70,9 +102,18 @@ export class WalletController {
    */
   @HttpCode(HttpStatus.OK)
   @Post('withdraw-account')
-  @ApiOperation({ summary: 'Effectuer un retrait sur un porte feuille électronique' })
-  PostWithdrawAccount(@Request() req: RequestAuth) {
+  @ApiOperation({
+    summary: 'Effectuer un retrait sur un porte feuille électronique',
+  })
+  async PostWithdrawAccount(
+    @Request() req: RequestAuth,
+    @Body() body: WithdrawalWalletDto,
+  ) {
     const user = req['user'];
-    return this.walletService.withdrawFunds(user.id, 1000);
+    const data = await this.walletService.withdrawUserAccount(user.id, body);
+    return {
+      message: 'Retrait Initialized...',
+      data,
+    };
   }
 }

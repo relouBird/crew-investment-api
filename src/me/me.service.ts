@@ -46,6 +46,7 @@ export class MeService {
         phone: data.phone ? data.phone : undefined,
         phoneConfirmedAt: user.phoneConfirmedAt ? undefined : new Date(),
         notifications: JSON.stringify(data.notifications),
+        twoFactorEnabled: data.twoFactorEnabled ? data.twoFactorEnabled: undefined
       },
     });
 
@@ -61,7 +62,7 @@ export class MeService {
     new_password: string,
     confirm_new_password: string,
   ) {
-    const user = await this.usersService.user({ id: userId });
+    let user = await this.usersService.user({ id: userId });
 
     const isPasswordValid = await this.compareHashPassword(
       current_password,
@@ -80,10 +81,12 @@ export class MeService {
 
     const hashedNewPassword = await this.generateHashPassword(new_password);
 
-    await this.usersService.updateUser({
+    user = await this.usersService.updateUser({
       where: { id: userId },
       data: { password: hashedNewPassword },
     });
+
+    return mapMeResponse(user);
   }
 
   async deleteAccount(userId: string) {

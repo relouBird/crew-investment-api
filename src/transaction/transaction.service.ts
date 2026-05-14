@@ -6,23 +6,25 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Transaction, User } from '@prisma/client';
+import {
+  Transaction,
+  TransactionStatus,
+  TransactionType,
+  User,
+} from '@prisma/client';
 import { CreateTransactionDTO } from 'src/dto/transaction.dto';
+import { NotchPayPaymentService } from './transaction-payment.service';
+import { NotchPayTransferService } from './transaction-transfer.service';
 
 // Simulons l’appel externe à une passerelle de paiement (NotchPay)
-interface PaymentStatus {
-  status: 'pending' | 'processing' | 'complete' | 'failed';
-  amount: number;
-}
-
-interface TransferStatus {
-  status: 'pending' | 'processing' | 'failed' | 'success';
-  amount: number;
-}
 
 @Injectable()
 export class TransactionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly paymentService: NotchPayPaymentService,
+    private readonly transferService: NotchPayTransferService,
+  ) {}
 
   /**
    * Récupère toutes les transactions (admin) ou uniquement celles de l’utilisateur.
@@ -73,13 +75,30 @@ export class TransactionService {
   }
 
   /**
+   * Filtre par status
+   */
+  async findAllByStatusAndType(
+    status: TransactionStatus,
+    type: TransactionType,
+  ) {
+    const transactions = await this.prisma.transaction.findMany({
+      where: {
+        status,
+        type,
+      },
+    });
+
+    return transactions;
+  }
+
+  /**
    * Crée une transaction. Le statut initial est "pending".
    */
   async create(
     dto: CreateTransactionDTO,
     userId: string,
   ): Promise<Transaction> {
-    return this.prisma.transaction.create({
+    return await this.prisma.transaction.create({
       data: {
         amount: dto.amount,
         description: dto.description,
@@ -115,10 +134,33 @@ export class TransactionService {
   }
 
   /**
+   * Récupère une transaction par son id (Numero unique).
+   */
+  async findById(transactionId: number, user?: User): Promise<Transaction> {
+    const transaction = await this.prisma.transaction.findUnique({
+      where: { id: transactionId},
+      include: { creator: true },
+    });
+
+    if (!transaction) {
+      throw new NotFoundException(
+        `Transaction introuvable (transactionId=${transactionId})`,
+      );
+    }
+
+    // Si un utilisateur non-admin essaie de voir une transaction qui ne lui appartient pas
+    if (user && user.type !== 'admin' && transaction.creatorId !== user.id) {
+      throw new ForbiddenException('Accès interdit à cette transaction');
+    }
+
+    return transaction;
+  }
+
+  /**
    * Vérifie l'état de la transaction et retourne également le portefeuille du créateur.
    */
-  async checkState(transactionId: string) {
-    const transaction = await this.findOne(transactionId);
+  async checkState(transactionId: number) {
+    const transaction = await this.findById(transactionId);
 
     // Récupération du porte‑feuille lié à l’utilisateur (suppose un modèle Wallet avec userId)
     const wallet = await this.prisma.wallet.findUnique({
@@ -135,10 +177,10 @@ export class TransactionService {
     const transaction = await this.findOne(transactionId);
 
     // Appel à l'API externe de vérification du paiement
-    const paymentStatus = await this.checkPaymentStatus(transactionId);
+    const paymentStatus = await this.paymentService.checkPayment(transactionId);
 
     // Mise à jour du statut local en fonction de la réponse
-    if (paymentStatus.status === 'complete') {
+    if (paymentStatus.transaction.status === 'complete') {
       await this.prisma.transaction.update({
         where: { transactionId },
         data: { status: 'done' },
@@ -148,10 +190,19 @@ export class TransactionService {
       await this.prisma.wallet.update({
         where: { uid: transaction.creatorId },
         data: {
-          funds: { increment: paymentStatus.amount },
+          funds: { increment: paymentStatus.transaction.amount },
         },
       });
-    } else if (paymentStatus.status === 'failed') {
+    } else if (paymentStatus.transaction.status == 'pending') {
+      // Rien du tout
+    } else if (paymentStatus.transaction.status == 'processing') {
+      // Rien du tout
+    } else if (paymentStatus.transaction.status === 'failed') {
+      await this.prisma.transaction.update({
+        where: { transactionId },
+        data: { status: 'failed' },
+      });
+    } else {
       await this.prisma.transaction.update({
         where: { transactionId },
         data: { status: 'failed' },
@@ -169,15 +220,26 @@ export class TransactionService {
     const transaction = await this.findOne(transactionId);
 
     // Appel à l'API externe
-    const transferStatus = await this.checkTransferStatus(transactionId);
+    const transferStatus =
+      await this.transferService.checkTransfer(transactionId);
 
-    if (transferStatus.status === 'success') {
+    if (transferStatus.transfer.status === 'complete') {
       // Le transfert a réussi : la somme a déjà été débitée, on cloture en "done"
       await this.prisma.transaction.update({
         where: { transactionId },
         data: { status: 'done' },
       });
-    } else if (transferStatus.status === 'failed') {
+    } else if (transferStatus.transfer.status === 'failed') {
+      //---------------- à remplacer plus tard par complete
+      await this.prisma.transaction.update({
+        where: { transactionId },
+        data: { status: 'done' },
+      });
+    } else if (transferStatus.transfer.status == 'pending') {
+      // Rien du tout
+    } else if (transferStatus.transfer.status == 'processing') {
+      // Rien du tout
+    } else {
       // Le transfert a échoué : on rembourse le portefeuille
       await this.prisma.transaction.update({
         where: { transactionId },
@@ -187,7 +249,7 @@ export class TransactionService {
       await this.prisma.wallet.update({
         where: { uid: transaction.creatorId },
         data: {
-          funds: { increment: transferStatus.amount },
+          funds: { increment: transferStatus.transfer.amount },
         },
       });
     }
@@ -196,15 +258,69 @@ export class TransactionService {
     return transferStatus;
   }
 
-  // ─── Méthodes simulées d’appel à la passerelle de paiement ─────────────
-  private async checkPaymentStatus(transactionId: string) {
-    // TODO: Remplacer par un vrai appel à NotchPay ou autre SDK
-    // Exemple fictif :
-    return { status: 'complete', amount: 5000 };
+  async createNotchPayTransaction({
+    uid,
+    transaction_id,
+    amount,
+    type,
+    description,
+  }: {
+    uid: string;
+    transaction_id: string;
+    amount: number;
+    type: TransactionType;
+    description: string;
+  }) {
+    return await this.prisma.transaction.create({
+      data: {
+        amount: amount,
+        description: description,
+        type: type,
+        creatorId: uid,
+        transactionId: transaction_id,
+        // status: 'pending' par défaut dans le modèle
+      },
+      include: { creator: true },
+    });
   }
 
-  private async checkTransferStatus(transactionId: string) {
-    // TODO: Remplacer par l’appel réel
-    return { status: 'success', amount: 5000 };
+  async createWinBetTransaction(
+    uid: string,
+    amount: number,
+    description: string,
+  ) {
+    return this.prisma.transaction.create({
+      data: {
+        amount: amount,
+        description: description,
+        type: 'bet_win',
+        status: 'done',
+        creator: {
+          connect: {
+            id: uid,
+          },
+        },
+      },
+    });
+  }
+
+  async createLossBetTransaction(
+    uid: string,
+    amount: number,
+    description: string,
+  ) {
+    return this.prisma.transaction.create({
+      data: {
+        amount: amount,
+        description: description,
+        type: 'bet_loss',
+        status: 'done',
+        creator: {
+          connect: {
+            id: uid,
+          },
+        },
+      },
+    });
   }
 }
