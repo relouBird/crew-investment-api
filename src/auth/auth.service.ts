@@ -107,7 +107,7 @@ export class AuthService {
       firstName: data.email.split('@')[0],
       lastName: generatedId,
       generatedId,
-      phone: '',
+      phone: null,
     };
     const { password: pass, ...createdUser } =
       await this.usersService.createUser(user);

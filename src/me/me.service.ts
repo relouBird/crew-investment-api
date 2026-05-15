@@ -43,10 +43,12 @@ export class MeService {
         country: data.country ? data.country : undefined,
         firstName: data.firstName ? data.firstName : undefined,
         lastName: data.lastName ? data.lastName : undefined,
-        phone: data.phone ? data.phone : undefined,
+        phone: data.phone && data.phone != '' ? data.phone : undefined,
         phoneConfirmedAt: user.phoneConfirmedAt ? undefined : new Date(),
         notifications: JSON.stringify(data.notifications),
-        twoFactorEnabled: data.twoFactorEnabled ? data.twoFactorEnabled: undefined
+        twoFactorEnabled: data.twoFactorEnabled
+          ? data.twoFactorEnabled
+          : undefined,
       },
     });
 
