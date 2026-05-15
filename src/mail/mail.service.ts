@@ -11,40 +11,40 @@ export class MailService {
   >;
   private sender: string;
 
-  // constructor(private configService: ConfigService) {
-  //   const host = this.configService.get('INVESTIA_SMTP_HOST');
-  //   const port = this.configService.get('INVESTIA_SMTP_PORT');
-  //   const user = this.configService.get('INVESTIA_SMTP_USER');
-  //   const pass = this.configService.get('INVESTIA_SMTP_PASS');
-
-  //   if (!host || !port || !user || !pass) {
-  //     throw new Error('Configuration SMTP incomplète');
-  //   }
-
-  //   this.transporter = createTransport({
-  //     host,
-  //     port: Number(port),
-  //     secure: true, // à mettre à false si port 587 (STARTTLS)
-  //     auth: { user, pass },
-  //   });
-
-  //   this.sender = String(user);
-  // }
-
   constructor(private configService: ConfigService) {
+    const host = this.configService.get('INVESTIA_SMTP_HOST');
+    const port = this.configService.get('INVESTIA_SMTP_PORT');
+    const user = this.configService.get('INVESTIA_SMTP_USER');
+    const pass = this.configService.get('INVESTIA_SMTP_PASS');
+
+    if (!host || !port || !user || !pass) {
+      throw new Error('Configuration SMTP incomplète');
+    }
+
     this.transporter = createTransport({
-      host: this.configService.get('SMTP_HOST'),
-      port: Number(this.configService.get('SMTP_PORT')),
+      host,
+      port: Number(port),
+      secure: true, // à mettre à false si port 587 (STARTTLS)
+      auth: { user, pass },
     });
 
-    this.sender = String(this.configService.get('SMTP_HOST'));
+    this.sender = String(user);
   }
+
+  // constructor(private configService: ConfigService) {
+  //   this.transporter = createTransport({
+  //     host: this.configService.get('SMTP_HOST'),
+  //     port: Number(this.configService.get('SMTP_PORT')),
+  //   });
+
+  //   this.sender = String(this.configService.get('SMTP_HOST'));
+  // }
 
   async sendMail(to: string, subject: string, html: string): Promise<void> {
     try {
       await this.transporter.sendMail({
-        from: 'noreply@investia.com',
-        // from: `"InvestIA, Supports" <${this.sender}>`,
+        // from: 'noreply@investia.com',
+        from: `"InvestIA, Supports" <${this.sender}>`,
         to,
         subject,
         html,
