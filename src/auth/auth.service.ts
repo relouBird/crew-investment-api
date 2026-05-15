@@ -332,6 +332,7 @@ export class AuthService {
       data: {
         role: 'authenticated',
         status: 'Actif',
+        lastSignInAt: new Date(),
         emailConfirmedAt: new Date(),
       },
     });
@@ -409,7 +410,7 @@ export class AuthService {
     password: string,
     password_confirmation: string,
   ) {
-    const user = await this.usersService.findByIdentifier(identifier);
+    let user = await this.usersService.findByIdentifier(identifier);
 
     if (!user) {
       throw new UnauthorizedException('User Not Found.');
@@ -423,14 +424,37 @@ export class AuthService {
       password_confirmation,
     );
 
-    await this.usersService.updateUser({
+    let session = await this.sessionService.findSessionByUserId(user.id);
+
+    user = await this.usersService.updateUser({
       where: { id: user.id },
       data: {
         password: hashedNewPassword,
         role: 'authenticated',
+        lastSignInAt: new Date(),
         status: 'Actif',
       },
     });
+
+    const payload: PayloadType = generatePayload(user);
+
+    const token = await this.jwtService.signAsync(payload);
+
+    if (!session) {
+      throw new NotFoundException('Complete registration first');
+    }
+
+    return {
+      message: 'Compte modifié.',
+      data: mapUserResponse(
+        user,
+        await this.sessionService.updateAccessToken(
+          session.id,
+          token,
+          payload.expiresAt,
+        ),
+      ),
+    };
   }
 
   // Fonction utilitaires

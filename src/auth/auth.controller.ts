@@ -156,11 +156,12 @@ export class AuthController {
     @Body()
     body: ChangePasswordDto,
   ) {
-    return this.authService.changePassword(
+    const data = this.authService.changePassword(
       body.email,
       body.password,
       body.password_confirmation,
     );
+    return data;
   }
 
   /**
