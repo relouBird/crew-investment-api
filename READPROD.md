@@ -9,8 +9,6 @@ ceci est à rajouter en ligne:
     origin: [
       `http://${ADMIN_PORTAIL_URL}`,
       `http://www.${ADMIN_PORTAIL_URL}`,
-      'https://www.finamix.alfyns-group.com',
-      'https://finamix.alfyns-group.com',
     ],
     credentials: true });
 ```
@@ -65,4 +63,19 @@ CREATE TABLE `Cat` (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE = InnoDB;
 
+```
+
+En suite faire les migrations :
+```bash
+$ npx prisma migrate deploy
+```
+
+Ensuite generer les types :
+```bash
+$ npx prisma generate
+```
+
+Ensuite generer les types :
+```bash
+$ nm run build
 ```
