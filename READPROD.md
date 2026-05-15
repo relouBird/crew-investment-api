@@ -9,8 +9,6 @@ ceci est à rajouter en ligne:
     origin: [
       `http://${ADMIN_PORTAIL_URL}`,
       `http://www.${ADMIN_PORTAIL_URL}`,
-      'https://www.finamix.alfyns-group.com',
-      'https://finamix.alfyns-group.com',
     ],
     credentials: true });
 ```
@@ -48,5 +46,36 @@ Mettre ceci en commentaire si ce ne sommes pas en dev mais en prod:
 Nous utilisons le moteur InnoDB et non MyISAM donc il faut à chaque fois génerer les migrations en prenant ça en compte dans nos calculs alors en production il faut faire
 
 ```bash
-$ npx prisma migrate dev --create-only --name migrate-to-innodb
+$ npx prisma migrate reset
+$ npx prisma migrate dev --name init
+```
+
+Maintenant sur toutes les tables generer sur la migration.sql rajouter à la fin `ENGINE = InnoDB`
+un peu comme ceci : 
+
+```bash
+CREATE TABLE `Cat` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(32) NOT NULL,
+    `age` SMALLINT NOT NULL DEFAULT 0,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE = InnoDB;
+
+```
+
+En suite faire les migrations :
+```bash
+$ npx prisma migrate deploy
+```
+
+Ensuite generer les types :
+```bash
+$ npx prisma generate
+```
+
+Ensuite generer les types :
+```bash
+$ nm run build
 ```

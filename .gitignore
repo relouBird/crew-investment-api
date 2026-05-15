@@ -4,8 +4,8 @@
 /build
 
 # Retirer les migrations compilées
-/prisma/migrations/*/migration.sql
-/prisma/migrations/*/migration.js
+# /prisma/migrations/*/migration.sql
+# /prisma/migrations/*/migration.js
 
 # Logs
 logs
