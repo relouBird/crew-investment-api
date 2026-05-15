@@ -40,14 +40,14 @@ export class AuthService {
       throw new NotFoundException('Invalid Credentials.');
     }
 
+    if (user.role == 'unauthenticated') {
+      throw new ForbiddenException('User Unauthenticated.');
+    }
+
     const session = await this.sessionService.findSessionByUserId(user.id);
 
     if (!session) {
       throw new NotFoundException('Something Where Wrong.');
-    }
-
-    if (user.role == 'unauthenticated') {
-      throw new ForbiddenException('User Unauthenticated.');
     }
 
     // comparer les hashs de mot de passe si le mot de passe est stocké sous forme de hash
