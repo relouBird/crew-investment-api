@@ -1,13 +1,16 @@
 import { Transaction } from '@prisma/client';
 
 // Type pour les statistiques de transactions
+export interface AdminTransactionStats extends TransactionStats {
+  totalWithdraws: number;
+  totalLoss: number;
+}
 export interface TransactionStats {
   totalDeposits: number;
   totalWins: number;
   totalPending: number;
   totalFailed: number;
 }
-
 // Type pour l'évolution
 export interface EvolutionData {
   digit: number;
@@ -20,6 +23,13 @@ export interface EvolutionData {
 export interface TransactionComposableResult {
   balance: number; // solde du wallet
   transactionStats: TransactionStats;
+  evolution: EvolutionData;
+  transactions: Transaction[];
+}
+
+export interface AdminTransactionComposableResult {
+  balance: number; // solde du wallet
+  transactionStats: AdminTransactionStats;
   evolution: EvolutionData;
   transactions: Transaction[];
 }

@@ -30,7 +30,6 @@ export class AdminBetController {
   @Get()
   @ApiOperation({ summary: 'Permet de recuperer tous les matchs' })
   async findAll() {
-    console.log("IT'S COMPETITIONS");
     const data = await this.betService.getAllBets();
     return {
       message: 'Matchs récupérés avec succès',
@@ -53,7 +52,6 @@ export class AdminBetController {
     summary: 'Permet de recuperer toutes les competitions de Foot Disponible',
   })
   async findCompetitions() {
-    console.log("IT'S COMPETITIONS");
     const data = await this.betService.getAllCompetitions();
     return {
       message: 'Toutes les competitions récupérées avec succès',

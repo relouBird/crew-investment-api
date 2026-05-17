@@ -212,4 +212,68 @@ export class SponsoringService {
       where: { id },
     });
   }
+
+  /**
+   * Récuperer tous les users ayant déjà sponsorisé.
+   */
+  async findSponsor() {
+    let sponsoringModelList = await this.prisma.sponsoring.findMany({
+      where: {
+        firstDeposit: false,
+      },
+      include: {
+        sponsor: true,
+        sponsored: true,
+      },
+    });
+
+    type ToValidateProps = {
+      sponsoringId: number;
+      sponsorId: string;
+    };
+
+    // On Liste tous les sponsorings
+    // Dont les premiers depots sont à mettre à TRUE
+    const listToValidate: ToValidateProps[] = [];
+
+    for (let i = 0; i < sponsoringModelList.length; i++) {
+      const sponsoring = sponsoringModelList[i];
+      const sponsored = sponsoring.sponsored;
+      const sponsor = sponsoring.sponsor;
+
+      const transaction = await this.prisma.transaction.findFirst({
+        where: {
+          creator: {
+            id: sponsored.id,
+          },
+          type: 'deposit',
+          status: 'done',
+        },
+      });
+
+      if (!transaction) {
+        continue;
+      }
+      listToValidate.push({
+        sponsoringId: sponsoring.id,
+        sponsorId: sponsor.id,
+      });
+    }
+
+    return listToValidate;
+  }
+
+  /**
+   * Sponsoring à mettre à jour
+   */
+  async toValidate(sponsoringList: number[]) {
+    return await this.prisma.sponsoring.updateMany({
+      where: {
+        id: { in: sponsoringList },
+      },
+      data: {
+        firstDeposit: true,
+      },
+    });
+  }
 }

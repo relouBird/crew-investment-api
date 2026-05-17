@@ -138,7 +138,7 @@ export class TransactionService {
    */
   async findById(transactionId: number, user?: User): Promise<Transaction> {
     const transaction = await this.prisma.transaction.findUnique({
-      where: { id: transactionId},
+      where: { id: transactionId },
       include: { creator: true },
     });
 
@@ -211,6 +211,32 @@ export class TransactionService {
     // les statuts 'pending'/'processing' ne modifient rien pour l’instant
 
     return paymentStatus;
+  }
+
+  /**
+   * Creer le payment de sponsoring
+   */
+  async addSponsoringPayment(uidList: string[]) {
+    let amount: number = 300;
+    const dataTransaction = uidList.map((uid) => ({
+      amount,
+      description: 'Sponsorisation Utilisateur',
+      type: 'deposit' as TransactionType,
+      creatorId: uid,
+    }));
+
+    const trans = await this.prisma.transaction.createMany({
+      data: dataTransaction,
+    });
+
+    await this.prisma.wallet.updateMany({
+      where: { uid: { in: uidList } },
+      data: {
+        funds: { increment: amount },
+      },
+    });
+
+    return trans;
   }
 
   /**

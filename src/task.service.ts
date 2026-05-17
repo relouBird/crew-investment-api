@@ -3,13 +3,15 @@ import { Cron } from '@nestjs/schedule';
 import { PrismaService } from './prisma/prisma.service';
 import { AdminBetService } from './admin-bets/admin-bets.service';
 import { TransactionService } from './transaction/transaction.service';
+import { SponsoringService } from './sponsoring/sponsoring.service';
 
 @Injectable()
 export class TaskService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly prismaService: PrismaService,
     private readonly adminBet: AdminBetService,
     private readonly transactionService: TransactionService,
+    private readonly sponsoringService: SponsoringService,
   ) {}
 
   private readonly logger = new Logger(TaskService.name);
@@ -46,6 +48,21 @@ export class TaskService {
     for (let index = 0; index < transaction_id_tab.length; index++) {
       await this.transactionService.checkPayment(transaction_id_tab[index]);
     }
+  }
+
+  @Cron('0 */2 * * * *')
+  async handleCheckSponsoring() {
+    this.logger.debug('Contrôle du premier payment des Sponsorisés ‼');
+
+    const toValidateList = await this.sponsoringService.findSponsor();
+
+    await this.sponsoringService.toValidate(
+      toValidateList.map((sp) => sp.sponsoringId),
+    );
+
+    await this.transactionService.addSponsoringPayment(
+      toValidateList.map((sp) => sp.sponsorId),
+    );
   }
 
   @Cron('0 */4 * * * *')

@@ -15,6 +15,7 @@ import { AdminBetModule } from './admin-bets/admin-bets.module';
 import { AdminUserModule } from './admin-users/admin-users.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TaskService } from './task.service';
+import { AdminWalletModule } from './admin-wallet/admin-wallet.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { TaskService } from './task.service';
     AdminUserModule,
     MeModule,
     SponsoringModule,
+    AdminWalletModule,
     WalletModule,
     TransactionModule,
     AdminBetModule,

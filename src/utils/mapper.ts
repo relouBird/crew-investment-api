@@ -9,7 +9,10 @@ import {
 } from '@prisma/client';
 import { PayloadType } from 'src/types/auth.type';
 import { safeJsonParse } from '.';
-import { TransactionComposableResult } from 'src/types/composable-result.type';
+import {
+  AdminTransactionComposableResult,
+  TransactionComposableResult,
+} from 'src/types/composable-result.type';
 
 export interface NotificationsType {
   email: boolean;
@@ -99,7 +102,10 @@ export function mapMeResponse(user: User) {
   };
 }
 
-export function properTxComposable(wallet: Wallet, transactions: Transaction[]): TransactionComposableResult {
+export function properTxComposable(
+  wallet: Wallet,
+  transactions: Transaction[],
+): TransactionComposableResult {
   // Initialiser les stats
   let totalDeposits = 0;
   let totalWins = 0;
@@ -139,6 +145,63 @@ export function properTxComposable(wallet: Wallet, transactions: Transaction[]):
     transactionStats: {
       totalDeposits,
       totalWins,
+      totalPending,
+      totalFailed,
+    },
+    evolution: {
+      digit: evolution,
+      amount: evolution.toFixed(2),
+      percentage: percentage.toFixed(1) + '%',
+      isPositive: evolution >= 0,
+    },
+    transactions,
+  };
+}
+
+export function properAdminTxComposable(
+  transactions: Transaction[],
+): AdminTransactionComposableResult {
+  // Initialiser les stats
+  let totalDeposits = 0; // Les dépots effectués
+  let totalWithdraws = 0; // Les retraits effectués
+  let totalWins = 0; // Ce qu'on gagne via les defaites des users
+  let totalLoss = 0; // Ce qu'on perd via les defaites des users
+  let totalPending = 0; // Transaction en attente
+  let totalFailed = 0; // Transaction échoué
+
+  // Parcours unique des transactions
+  for (const tx of transactions) {
+    if (tx.status === 'done') {
+
+      if (tx.type === 'deposit') {
+        totalDeposits += tx.amount;
+      } else if (tx.type === 'withdrawal') {
+        totalWithdraws += tx.amount;
+      } else if (tx.type === 'bet_win') {
+        totalLoss += tx.amount;
+      } else if (tx.type === 'bet_loss') {
+        totalWins += tx.amount;
+      }
+    } else if (tx.status === 'pending') {
+      totalPending += tx.amount;
+    } else if (tx.status === 'failed') {
+      totalFailed += tx.amount;
+    }
+  }
+
+  const balance = totalDeposits - totalWithdraws;
+  const evolution = totalWins - totalLoss;
+  const volume = totalWins + totalLoss;
+  const percentage = volume !== 0 ? (evolution / volume) * 100 : 0;
+
+  return {
+    // Utilise le solde réel du wallet au lieu de recalculer
+    balance,
+    transactionStats: {
+      totalDeposits,
+      totalWithdraws,
+      totalWins,
+      totalLoss,
       totalPending,
       totalFailed,
     },

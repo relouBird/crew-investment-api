@@ -4,46 +4,31 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   Request,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiOperation } from '@nestjs/swagger';
-import { WalletService } from './wallet.service';
+import { AdminWalletService } from './admin-wallet.service';
 import { RequestAuth } from 'src/types/auth.type';
 import { RefillWalletDTO, WithdrawalWalletDto } from 'src/dto/wallet.dto';
 
-@ApiTags('Wallets')
+@ApiTags('Admin Wallets')
 @ApiBearerAuth('access-token')
-@Controller('wallets')
-export class WalletController {
-  constructor(private walletService: WalletService) {}
-
-  /**
-   * =========================
-   * 🔐 ROUTE WALLET
-   * =========================
-   * GET /wallets/
-   * Route pour avoir les informations du compte d'un utilisateur
-   */
-  @HttpCode(HttpStatus.OK)
-  @Get('')
-  @ApiOperation({ summary: "Détail du porte-feuille d'un utilisateur " })
-  GetWallet(@Request() req: RequestAuth) {
-    const user = req['user'];
-    return this.walletService.getWalletByUserId(user.id);
-  }
-
+@Controller('admin/wallets')
+export class AdminWalletController {
+  constructor(private walletService: AdminWalletService) {}
   /**
    * =========================
    * 🔐 ROUTE STAT WALLET
    * =========================
-   * GET /wallets/summary
-   * Route pour avoir les informations statistiques du compte d'un utilisateur
+   * GET /admin/wallets/summary
+   * Route pour avoir les informations statistiques coté administrateur
    */
   @HttpCode(HttpStatus.OK)
   @Get('summary')
   @ApiOperation({
-    summary: "Détail et statistique du porte-feuille d'un utilisateur ",
+    summary: "Détail et statistiques coté administrateur",
   })
   async GetStatWallet(@Request() req: RequestAuth) {
     const user = req['user'];
@@ -54,17 +39,33 @@ export class WalletController {
     };
   }
 
+
+  /**
+   * =========================
+   * 🔐 ROUTE ALL WALLETS
+   * =========================
+   * GET /wallets/all
+   * Route pour avoir les informations de tous les comptes utilisateurs
+   */
+  @HttpCode(HttpStatus.OK)
+  @Get('all')
+  @ApiOperation({ summary: 'Liste de tous les portes feuilles électroniques' })
+  GetAllWallets(@Request() req: RequestAuth) {
+    const user = req['user'];
+    return this.walletService.getAllWallets();
+  }
+
   /**
    * =========================
    * 🔐 ROUTE WALLET REFILL ACCOUNT
    * =========================
-   * POST /wallets/refill-account
+   * POST /admin/wallets/refill-account
    * Route pour recharger son compte en fonds
    */
   @HttpCode(HttpStatus.OK)
   @Post('refill-account')
   @ApiOperation({
-    summary: "Effectuer une recharge d'un porte feuille électronique",
+    summary: "Effectuer une recharge coté administrateur",
   })
   async PostRefillAccount(
     @Request() req: RequestAuth,
@@ -82,13 +83,13 @@ export class WalletController {
    * =========================
    * 🔐 ROUTE WALLET WITHDRAW ACCOUNT
    * =========================
-   * POST /wallets/withdraw-account
+   * POST /admin/wallets/withdraw-account
    * Route pour retirer des fonds de son compte
    */
   @HttpCode(HttpStatus.OK)
   @Post('withdraw-account')
   @ApiOperation({
-    summary: 'Effectuer un retrait sur un porte feuille électronique',
+    summary: 'Effectuer un retrait sur le porte feuille admin',
   })
   async PostWithdrawAccount(
     @Request() req: RequestAuth,
@@ -101,4 +102,14 @@ export class WalletController {
       data,
     };
   }
+
+    /**
+     * GET /transactions/:id/check
+     * Vérifie l’état de la transaction et retourne le portefeuille associé.
+     */
+    @Get('check-transaction/:id')
+    @ApiOperation({ summary: "Vérifier l'état de la transaction" })
+    async checkState(@Param('id') id: number) {
+      return this.walletService.checkState(id);
+    }
 }
